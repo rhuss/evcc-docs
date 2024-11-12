@@ -60,9 +60,9 @@ Falls die Nachricht als XML empfangen wird, wird diese vor der weiteren Verarbei
 Der eigentlich skalare Wert kann auf verschiedene Arten extrahiert werden, die durch folgende Parameter konfiguriert werden können:
 
 * `regex:` ist ein regulärer Ausdruck um den Wert aus der empfangenen MQTT Nachricht zu extrahieren. Wenn der reguläre Ausdruck keine Gruppen (`(....)`) enthält, dann wird der längste Text auf den die gesamte Regexp zutrifft ausgewählt. Ansonsten die erste Gruppe, die zutrifft. Z.g. liefert eine regexp "` (\d+) `" angewendet auf eine Nachricht `Energy= 200 W` die Zahl `200`. Mit `default:` kann ein Wert definiert werden, der verwendet wird falls der reguläre Ausdruck keinen Treffer liefert.
-* `jq:` kann genutzt werden um einen jq Ausdruck zu definieren, der den Wert aus einer empfangenen JSON Nachricht extrahiert. Z.B. liefert der jq Ausdruck `.power` angewendet auf eine JSON Struktur `{ "power": 2300, "energy": 300, ...}` den numerischen Wert `2300`. Der jq Syntax bietet viele Möglichkeiten die im [jq Manual](https://jqlang.github.io/jq/manual/) beschrieben sind.
+* `jq:` kann genutzt werden um einen jq Ausdruck zu definieren, der den Wert aus einer empfangenen JSON Nachricht extrahiert. Z.B. liefert der jq Ausdruck `.power` angewendet auf eine JSON Struktur `{ "power": 2300, "energy": 300, ...}` den numerischen Wert `2300`. Der jq Syntax bietet viele Möglichkeiten die alle in der [jq Dokumentation](https://jqlang.github.io/jq/manual/) beschrieben sind.
 * `unpack:` erlaubt es, einen Wert aus einem anderen Zahlenrepräsentation umzuwandeln. Aktuell wird nur `unpack: hex` unterstützt, dass hexadezimale Werte aus einer Stringdarstellung (z.b. "F1EA") umrechnen kann. Unpack wird nach einer eventuellen Extraktion mit `regex` oder `jq` angewendet.
-* `decode:` ist ähnlich wie `unpack:`, kann jedoch verschiedene Binärdarformate auswerten. Z.b wandelt `decode: uint32` die in der MQTT Payload enthaltenen unsigned 32-Bit Integerzahlen um, so dass sie weiterverarbeitet werden können. `decode:` sollte nicht mit `regex:` oder `jq:` verwendet werden, das es auf Binärformaten arbeitet. Aktuell werden folgende Binärformate unterstützt: `float32`, `float32s`, `float64`, `uint16`, `uint32`, `uint64`, `int16`, `int32`, `int32s`, `ieee754`, `ieee754s`.
+* `decode:` kann  verschiedene Binärformate auswerten. Z.b wandelt `decode: uint32` die in der MQTT Payload enthaltenen unsigned 32-Bit Integerzahlen um, so dass sie weiterverarbeitet werden können. Aktuell werden folgende Binärformate unterstützt: _float32_, _float32s_, _float64_, _uint16_, _uint32_, _uint64_, _int16_, _int32_, _int32s_, _ieee754_, _ieee754s_.
 
 ## HTTP (lesen/schreiben)
 
@@ -81,19 +81,24 @@ Für den Test von jq-Abfragen bietet sich z. B. das Online-Tool https://jqplay.o
 **Beispiel Lesen**:
 
 ```yaml
-source: http
-uri: https://volkszaehler/api/data/<uuid>.json?from=now
-method: GET # default HTTP method
-headers:
-  - content-type: application/json
-auth: # basic authentication
-  type: basic
-  user: foo
-  password: bar
-insecure: false # set to true to trust self-signed certificates
-jq: .data.tuples[0][1] # parse response json
-scale: 0.001 # floating point factor applied to result, e.g. for kW to W conversion
-timeout: 10s # timeout in golang duration format, see https://golang.org/pkg/time/#ParseDuration
+meters:
+- name: grid-meter
+  type: custom
+    source: http
+    uri: https://volkszaehler/api/data/<uuid>.json?from=now
+    method: GET # default HTTP method
+    headers:
+    - content-type: application/json
+    auth: # basic authentication
+      type: basic
+      user: foo
+      password: bar
+    insecure: false # set to true to trust self-signed certificates
+    jq: .data.tuples[0][1] # parse response json
+    scale: 0.001 # floating point factor applied to result, 
+                 # e.g. for kW to W conversion
+    timeout: 10s # request timeout in golang duration format, 
+                 # see https://golang.org/pkg/time/#ParseDuration
 ```
 
 ```yaml
